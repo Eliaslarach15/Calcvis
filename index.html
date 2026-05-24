@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CalcVis — Advanced Calculus Visualization</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@400;600;700&amp;family=Hanken+Grotesk:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- UI Designer Instructions Implementation -->
+<style>
+        :root {
+            --glass-bg: rgba(15, 15, 26, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glow-indigo: rgba(192, 193, 255, 0.2);
+            --glow-cyan: rgba(93, 230, 255, 0.2);
+        }
+
+        body {
+            background-color: #080810;
+            color: #e4e1ed;
+            overflow-x: hidden;
+            font-family: 'Hanken Grotesk', sans-serif;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+        }
+
+        .glass-panel:hover {
+            box-shadow: 0 0 25px var(--glow-indigo);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .math-text {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Animated Mesh Background */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            filter: blur(80px);
+            opacity: 0.4;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #080810; }
+        ::-webkit-scrollbar-thumb { background: #34343d; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #c0c1ff; }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary": "#ffb2b7",
+                    "surface-container-highest": "#34343d",
+                    "on-secondary-fixed": "#001f25",
+                    "tertiary-fixed-dim": "#ffb2b7",
+                    "surface-container-high": "#292932",
+                    "inverse-primary": "#494bd6",
+                    "surface-variant": "#34343d",
+                    "on-surface": "#e4e1ed",
+                    "surface-bright": "#393842",
+                    "outline-variant": "#464554",
+                    "on-secondary-fixed-variant": "#004e5a",
+                    "background": "#13131b",
+                    "on-primary": "#1000a9",
+                    "on-primary-container": "#0d0096",
+                    "inverse-surface": "#e4e1ed",
+                    "secondary-fixed-dim": "#2fd9f4",
+                    "error": "#ffb4ab",
+                    "on-tertiary-fixed": "#40000d",
+                    "surface": "#13131b",
+                    "primary-container": "#8083ff",
+                    "inverse-on-surface": "#302f39",
+                    "surface-container-lowest": "#0d0d16",
+                    "primary-fixed": "#e1e0ff",
+                    "on-surface-variant": "#c7c4d7",
+                    "surface-tint": "#c0c1ff",
+                    "on-secondary-container": "#00515d",
+                    "on-error": "#690005",
+                    "primary-fixed-dim": "#c0c1ff",
+                    "on-background": "#e4e1ed",
+                    "surface-dim": "#13131b",
+                    "on-secondary": "#00363e",
+                    "on-error-container": "#ffdad6",
+                    "on-tertiary": "#67001b",
+                    "on-tertiary-container": "#5b0017",
+                    "outline": "#908fa0",
+                    "on-tertiary-fixed-variant": "#92002a",
+                    "secondary-container": "#00cbe6",
+                    "secondary-fixed": "#a2eeff",
+                    "tertiary-fixed": "#ffdadb",
+                    "tertiary-container": "#ff516a",
+                    "on-primary-fixed-variant": "#2f2ebe",
+                    "surface-container-low": "#1b1b23",
+                    "secondary": "#5de6ff",
+                    "primary": "#c0c1ff",
+                    "on-primary-fixed": "#07006c",
+                    "error-container": "#93000a",
+                    "surface-container": "#1f1f28"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "margin-desktop": "64px",
+                    "container-max": "1440px",
+                    "unit": "4px",
+                    "margin-mobile": "20px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "h2": ["archivoNarrow"],
+                    "data-display": ["jetbrainsMono"],
+                    "h1": ["archivoNarrow"],
+                    "body-md": ["hankenGrotesk"],
+                    "h1-mobile": ["archivoNarrow"],
+                    "body-lg": ["hankenGrotesk"],
+                    "label-caps": ["jetbrainsMono"]
+            },
+            "fontSize": {
+                    "h2": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "data-display": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                    "h1": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "h1-mobile": ["32px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "label-caps": ["12px", {"lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-background text-on-background selection:bg-primary/30">
+<canvas id="bg-canvas"></canvas>
+<!-- TopNavBar (Shared Component) -->
+<header class="fixed top-0 w-full z-50 bg-background/60 backdrop-blur-xl border-b border-white/10 shadow-[0_0_20px_rgba(192,193,255,0.1)]">
+<nav class="flex justify-between items-center px-margin-desktop h-20 w-full max-w-container-max mx-auto">
+<div class="font-h2 text-h2 font-bold text-primary tracking-tighter">CalcVis</div>
+<div class="hidden md:flex gap-8 items-center font-body-md text-body-md">
+<a class="text-secondary font-bold border-b-2 border-secondary pb-1 cursor-pointer active:scale-95 transition-transform" href="#riemann">Riemann</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:scale-95 transition-transform" href="#taylor">Taylor</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:scale-95 transition-transform" href="#area">Area</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:scale-95 transition-transform" href="#solids">Solids</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:scale-95 transition-transform" href="#three-d">3D</a>
+</div>
+<div class="px-4 py-1.5 border border-primary/30 rounded-full font-label-caps text-label-caps text-primary bg-primary/5">
+                TecnoUPSA 2025
+            </div>
+</nav>
+</header>
+<main class="mt-20">
+<!-- Hero Section -->
+<section class="min-h-[716px] flex flex-col items-center justify-center text-center px-margin-mobile md:px-margin-desktop relative overflow-hidden">
+<div class="absolute inset-0 pointer-events-none overflow-hidden">
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px]"></div>
+</div>
+<h1 class="font-h1 text-h1 md:text-[120px] mb-4 tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-b from-primary to-secondary">
+                CalcVis
+            </h1>
+<p class="font-h2 text-h2 text-on-surface-variant max-w-2xl opacity-80">
+                Advanced Calculus Visualization Suite
+            </p>
+<div class="mt-12 flex gap-4">
+<button class="bg-primary text-on-primary px-8 py-4 rounded-lg font-label-caps text-label-caps hover:shadow-[0_0_20px_rgba(192,193,255,0.4)] transition-all">
+                    START SIMULATION
+                </button>
+<button class="border border-secondary text-secondary px-8 py-4 rounded-lg font-label-caps text-label-caps hover:bg-secondary/10 transition-all">
+                    DOCUMENTATION
+                </button>
+</div>
+</section>
+<!-- 01 — Riemann & Integrals -->
+<section class="py-24 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto" id="riemann">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<div class="lg:col-span-4 flex flex-col gap-6">
+<div class="flex items-center gap-3">
+<span class="text-primary font-label-caps text-h2">01</span>
+<h2 class="font-h2 text-h2 uppercase tracking-wide">Riemann Sums</h2>
+</div>
+<div class="glass-panel p-6 rounded-xl space-y-6">
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant">FUNCTION F(X)</label>
+<input class="w-full bg-surface-container-lowest border-0 border-b border-outline text-primary font-data-display focus:border-secondary focus:ring-0 transition-all" id="riemann-fn" type="text" value="Math.sin(x) + 2"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant">LOWER (A)</label>
+<input class="w-full bg-surface-container-lowest border-0 border-b border-outline text-primary font-data-display" id="riemann-a" step="0.5" type="number" value="0"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant">UPPER (B)</label>
+<input class="w-full bg-surface-container-lowest border-0 border-b border-outline text-primary font-data-display" id="riemann-b" step="0.5" type="number" value="6.28"/>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between">
+<label class="font-label-caps text-label-caps text-on-surface-variant">PARTITIONS (N)</label>
+<span class="font-data-display text-secondary" id="n-val">20</span>
+</div>
+<input class="w-full accent-secondary" id="riemann-n" max="100" min="1" type="range" value="20"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant">METHOD</label>
+<select class="w-full bg-surface-container-lowest border-0 border-b border-outline text-primary font-data-display" id="riemann-method">
+<option value="left">Left Riemann Sum</option>
+<option value="right">Right Riemann Sum</option>
+<option value="mid">Midpoint Rule</option>
+<option value="trap">Trapezoidal Rule</option>
+</select>
+</div>
+</div>
+<div class="glass-panel p-6 rounded-xl grid grid-cols-2 gap-4">
+<div class="space-y-1">
+<p class="font-label-caps text-[10px] text-on-surface-variant">APPROXIMATION</p>
+<p class="font-data-display text-secondary text-lg" id="riemann-approx">0.0000</p>
+</div>
+<div class="space-y-1">
+<p class="font-label-caps text-[10px] text-on-surface-variant">EXACT VALUE</p>
+<p class="font-data-display text-primary text-lg" id="riemann-exact">0.0000</p>
+</div>
+<div class="space-y-1">
+<p class="font-label-caps text-[10px] text-on-surface-variant">ABSOLUTE ERROR</p>
+<p class="font-data-display text-error text-lg" id="riemann-error">0.0000</p>
+</div>
+<div class="space-y-1">
+<p class="font-label-caps text-[10px] text-on-surface-variant">ACCURACY</p>
+<p class="font-data-display text-on-secondary-container text-lg" id="riemann-acc">0.0%</p>
+</div>
+</div>
+</div>
+<div class="lg:col-span-8">
+<div class="glass-panel rounded-xl h-[500px] relative overflow-hidden group">
+<canvas class="w-full h-full cursor-crosshair" id="riemann-canvas"></canvas>
+<div class="absolute top-4 right-4 bg-surface-container-highest/80 backdrop-blur-md px-3 py-1.5 rounded border border-white/10 flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-secondary animate-pulse"></div>
+<span class="font-label-caps text-[10px]">REAL-TIME RESOLVER</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 02 — Taylor Series -->
+<section class="py-24 bg-surface-container-lowest/50 border-y border-white/5" id="taylor">
+<div class="px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
+<div class="flex flex-col items-center mb-16 text-center">
+<div class="flex items-center gap-3 mb-4">
+<span class="text-primary font-label-caps text-h2">02</span>
+<h2 class="font-h2 text-h2 uppercase tracking-wide">Taylor Series Expansion</h2>
+</div>
+<p class="text-on-surface-variant max-w-xl font-body-md">Approximating transcendental functions using polynomials centered at point 'a'. Higher terms increase local convergence.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter mb-8">
+<div class="glass-panel p-6 rounded-xl flex flex-col gap-4">
+<label class="font-label-caps text-label-caps text-on-surface-variant">BASE FUNCTION</label>
+<div class="grid grid-cols-1 gap-2">
+<button class="taylor-fn-btn active bg-primary/20 border border-primary text-primary px-4 py-2 rounded text-left font-data-display" data-fn="sin">sin(x)</button>
+<button class="taylor-fn-btn border border-white/10 hover:border-primary/50 text-on-surface-variant px-4 py-2 rounded text-left font-data-display" data-fn="cos">cos(x)</button>
+<button class="taylor-fn-btn border border-white/10 hover:border-primary/50 text-on-surface-variant px-4 py-2 rounded text-left font-data-display" data-fn="exp">exp(x)</button>
+</div>
+</div>
+<div class="glass-panel p-6 rounded-xl flex flex-col gap-4">
+<label class="font-label-caps text-label-caps text-on-surface-variant">CENTER POINT (a)</label>
+<input class="w-full accent-primary mt-4" id="taylor-a" max="5" min="-5" step="0.1" type="range" value="0"/>
+<div class="flex justify-between font-data-display text-primary">
+<span>-5</span>
+<span id="taylor-a-val">0</span>
+<span>5</span>
+</div>
+</div>
+<div class="md:col-span-2 glass-panel p-6 rounded-xl flex flex-col gap-4">
+<label class="font-label-caps text-label-caps text-on-surface-variant">POLYNOMIAL DEGREE (n)</label>
+<div class="flex flex-wrap gap-2">
+<button class="taylor-n-btn px-4 py-2 border border-white/10 rounded font-data-display" data-n="1">n=1</button>
+<button class="taylor-n-btn px-4 py-2 border border-white/10 rounded font-data-display" data-n="2">n=2</button>
+<button class="taylor-n-btn px-4 py-2 border border-white/10 rounded font-data-display bg-secondary/20 border-secondary text-secondary" data-n="3">n=3</button>
+<button class="taylor-n-btn px-4 py-2 border border-white/10 rounded font-data-display" data-n="5">n=5</button>
+<button class="taylor-n-btn px-4 py-2 border border-white/10 rounded font-data-display" data-n="7">n=7</button>
+<button class="taylor-n-btn px-4 py-2 border border-white/10 rounded font-data-display" data-n="9">n=9</button>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl h-[450px] overflow-hidden">
+<canvas class="w-full h-full" id="taylor-canvas"></canvas>
+</div>
+</div>
+</section>
+<!-- 03 — Area Between Curves -->
+<section class="py-24 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto" id="area">
+<div class="flex flex-col md:flex-row gap-gutter">
+<div class="md:w-1/3 space-y-8">
+<div class="flex items-center gap-3">
+<span class="text-secondary font-label-caps text-h2">03</span>
+<h2 class="font-h2 text-h2 uppercase tracking-wide">Area Between Curves</h2>
+</div>
+<div class="glass-panel p-6 rounded-xl space-y-6">
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-secondary">TOP FUNCTION F(X)</label>
+<input class="w-full bg-surface-container-lowest border-0 border-b border-secondary text-secondary font-data-display" id="area-f" type="text" value="Math.cos(x) + 2"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-tertiary">BOTTOM FUNCTION G(X)</label>
+<input class="w-full bg-surface-container-lowest border-0 border-b border-tertiary text-tertiary font-data-display" id="area-g" type="text" value="Math.pow(x-3, 2) / 4"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant">START (A)</label>
+<input class="w-full bg-surface-container-lowest border-0 border-b border-outline text-primary font-data-display" id="area-a" step="0.5" type="number" value="1"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant">END (B)</label>
+<input class="w-full bg-surface-container-lowest border-0 border-b border-outline text-primary font-data-display" id="area-b" step="0.5" type="number" value="5"/>
+</div>
+</div>
+</div>
+<div class="glass-panel p-6 rounded-xl">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-2">CALCULATED NET AREA</p>
+<div class="flex items-baseline gap-2">
+<span class="text-4xl font-h1 text-primary" id="area-result">0.000</span>
+<span class="text-on-surface-variant font-label-caps uppercase text-[10px]">Units²</span>
+</div>
+</div>
+</div>
+<div class="md:w-2/3">
+<div class="glass-panel rounded-xl h-[500px] overflow-hidden">
+<canvas class="w-full h-full" id="area-canvas"></canvas>
+</div>
+</div>
+</div>
+</section>
+<!-- 04 — Solid of Revolution -->
+<section class="py-24 bg-surface-container-low/80" id="solids">
+<div class="px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
+<div class="flex items-center justify-center gap-3 mb-12">
+<span class="text-primary font-label-caps text-h2">04</span>
+<h2 class="font-h2 text-h2 uppercase tracking-wide">Solids of Revolution</h2>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+<div class="glass-panel p-8 rounded-2xl flex flex-col gap-8">
+<div class="space-y-4">
+<label class="font-label-caps text-label-caps text-on-surface-variant">PROFILE FUNCTION F(X)</label>
+<input class="w-full bg-transparent border-0 border-b-2 border-primary text-3xl font-h2 text-primary focus:ring-0" id="solid-f" type="text" value="Math.sqrt(x)"/>
+</div>
+<div class="grid grid-cols-3 gap-6">
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant">LOWER X</label>
+<input class="w-full bg-surface-container-highest/30 rounded border-white/10 p-2" id="solid-a" type="number" value="0"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant">UPPER X</label>
+<input class="w-full bg-surface-container-highest/30 rounded border-white/10 p-2" id="solid-b" type="number" value="4"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant">AXIS</label>
+<select class="w-full bg-surface-container-highest/30 rounded border-white/10 p-2">
+<option>X-Axis</option>
+</select>
+</div>
+</div>
+<div class="mt-auto glass-panel p-6 bg-primary/5 rounded-xl border-primary/20">
+<div class="flex justify-between items-center">
+<div>
+<p class="font-label-caps text-[10px] text-primary">VOLUME INTEGRAL</p>
+<p class="font-data-display text-sm">∫ π [f(x)]² dx</p>
+</div>
+<div class="text-right">
+<p class="font-label-caps text-[10px] text-on-surface-variant">TOTAL VOLUME</p>
+<p class="text-2xl font-h2 text-primary" id="solid-vol">25.133</p>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-2xl h-[400px] lg:h-auto overflow-hidden">
+<canvas class="w-full h-full" id="solid-canvas"></canvas>
+</div>
+</div>
+</div>
+</section>
+<!-- 05 — 3D Surface -->
+<section class="py-24 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto h-[921px] flex flex-col" id="three-d">
+<div class="flex justify-between items-end mb-8">
+<div>
+<div class="flex items-center gap-3">
+<span class="text-secondary font-label-caps text-h2">05</span>
+<h2 class="font-h2 text-h2 uppercase tracking-wide">3D Parametric Surfaces</h2>
+</div>
+<p class="text-on-surface-variant font-data-display">z = f(x, y)</p>
+</div>
+<div class="flex gap-4">
+<div class="glass-panel px-4 py-2 rounded-lg flex items-center gap-3">
+<label class="font-label-caps text-[10px]">RESOLVER</label>
+<input class="bg-transparent border-0 border-b border-secondary p-0 text-sm font-data-display w-48" id="z-fn" type="text" value="sin(sqrt(x^2+y^2))"/>
+</div>
+</div>
+</div>
+<div class="flex-grow glass-panel rounded-3xl overflow-hidden relative" id="three-container">
+<!-- Three.js will mount here -->
+<div class="absolute bottom-6 left-6 flex flex-col gap-2">
+<div class="bg-surface-container-highest/90 backdrop-blur px-3 py-1.5 rounded-md border border-white/5 font-label-caps text-[10px] text-on-surface-variant">
+                        LEFT CLICK: ROTATE
+                    </div>
+<div class="bg-surface-container-highest/90 backdrop-blur px-3 py-1.5 rounded-md border border-white/5 font-label-caps text-[10px] text-on-surface-variant">
+                        SCROLL: ZOOM
+                    </div>
+</div>
+</div>
+</section>
+</main>
+<footer class="py-12 border-t border-white/5 mt-24">
+<div class="max-w-container-max mx-auto px-margin-desktop flex flex-col md:flex-row justify-between items-center gap-8">
+<div class="flex flex-col gap-2">
+<span class="font-h2 text-2xl font-bold text-primary tracking-tighter">CalcVis</span>
+<p class="text-on-surface-variant text-sm max-w-xs font-body-md opacity-60">Engineered for absolute mathematical precision and visual clarity. Developed for TecnoUPSA 2025.</p>
+</div>
+<div class="flex gap-12">
+<div class="flex flex-col gap-3">
+<span class="font-label-caps text-[10px] text-primary">PROJECT</span>
+<a class="text-on-surface-variant text-sm hover:text-white transition-colors font-data-display" href="#">Github Source</a>
+<a class="text-on-surface-variant text-sm hover:text-white transition-colors font-data-display" href="#">Mathematical Basis</a>
+</div>
+<div class="flex flex-col gap-3">
+<span class="font-label-caps text-[10px] text-secondary">CONTACT</span>
+<a class="text-on-surface-variant text-sm hover:text-white transition-colors font-data-display" href="#">Lab Alpha</a>
+<a class="text-on-surface-variant text-sm hover:text-white transition-colors font-data-display" href="#">Support</a>
+</div>
+</div>
+</div>
+</footer>
+<script>
+    /* ─── BACKGROUND ANIMATION ─── */
+    const bgCanvas = document.getElementById('bg-canvas');
+    const bgCtx = bgCanvas.getContext('2d');
+    let bgW, bgH;
+    function resizeBg() { bgW = bgCanvas.width = window.innerWidth; bgH = bgCanvas.height = window.innerHeight; }
+    window.addEventListener('resize', resizeBg);
+    resizeBg();
+    const dots = [];
+    for (let i = 0; i < 6; i++) {
+        dots.push({ x: Math.random() * bgW, y: Math.random() * bgH,
+            vx: (Math.random() - 0.5), vy: (Math.random() - 0.5),
+            radius: 200 + Math.random() * 200, color: i % 2 === 0 ? '#494bd6' : '#5de6ff' });
+    }
+    function animateBg() {
+        bgCtx.clearRect(0, 0, bgW, bgH);
+        dots.forEach(d => {
+            d.x += d.vx; d.y += d.vy;
+            if (d.x < 0 || d.x > bgW) d.vx *= -1;
+            if (d.y < 0 || d.y > bgH) d.vy *= -1;
+            const g = bgCtx.createRadialGradient(d.x, d.y, 0, d.x, d.y, d.radius);
+            g.addColorStop(0, d.color); g.addColorStop(1, 'transparent');
+            bgCtx.fillStyle = g;
+            bgCtx.beginPath(); bgCtx.arc(d.x, d.y, d.radius, 0, Math.PI * 2); bgCtx.fill();
+        });
+        requestAnimationFrame(animateBg);
+    }
+    animateBg();
+
+    /* ─── SHARED MATH UTILS ─── */
+    function safeEval(fnStr, xVal) {
+        try { return new Function('x', 'return ' + fnStr)(xVal); } catch(e) { return 0; }
+    }
+    function numericalIntegral(fnStr, a, b, steps) {
+        steps = steps || 2000;
+        const dx = (b - a) / steps;
+        let sum = 0;
+        for (let i = 0; i < steps; i++) sum += safeEval(fnStr, a + (i + 0.5) * dx);
+        return sum * dx;
+    }
+    function factorial(n) { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; }
+
+    /* ─── MODULE 01: RIEMANN SUMS ─── */
+    (function() {
+        const canvas = document.getElementById('riemann-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function draw() {
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvas.parentElement.clientWidth;
+            const h = canvas.parentElement.clientHeight;
+            canvas.width = w * dpr; canvas.height = h * dpr;
+            ctx.scale(dpr, dpr);
+
+            const fnStr = document.getElementById('riemann-fn').value;
+            const a = parseFloat(document.getElementById('riemann-a').value);
+            const b = parseFloat(document.getElementById('riemann-b').value);
+            const n = parseInt(document.getElementById('riemann-n').value);
+            const method = document.getElementById('riemann-method').value;
+            document.getElementById('n-val').innerText = n;
+
+            if (!isFinite(a) || !isFinite(b) || a >= b) return;
+
+            /* Determine y range by sampling the function over [a,b] */
+            const sampleCount = 300;
+            let yMin = Infinity, yMax = -Infinity;
+            for (let i = 0; i <= sampleCount; i++) {
+                const y = safeEval(fnStr, a + i * (b - a) / sampleCount);
+                if (isFinite(y)) { yMin = Math.min(yMin, y); yMax = Math.max(yMax, y); }
+            }
+            yMin = Math.min(yMin, 0); yMax = Math.max(yMax, 0);
+            if (yMin === yMax) { yMin -= 1; yMax += 1; }
+
+            const pad = 40;
+            const xSpan = b - a, ySpan = yMax - yMin;
+            const xPad = xSpan * 0.12, yPad = ySpan * 0.18;
+            const dxMin = a - xPad, dxMax = b + xPad;
+            const dyMin = yMin - yPad, dyMax = yMax + yPad;
+
+            function cx(x) { return pad + (x - dxMin) / (dxMax - dxMin) * (w - 2 * pad); }
+            function cy(y) { return (h - pad) - (y - dyMin) / (dyMax - dyMin) * (h - 2 * pad); }
+            const y0 = cy(0);
+
+            ctx.clearRect(0, 0, w, h);
+
+            /* Grid */
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+            const gsx = (dxMax - dxMin) / 10;
+            for (let gx = Math.ceil(dxMin / gsx) * gsx; gx <= dxMax + gsx * 0.01; gx += gsx) {
+                ctx.beginPath(); ctx.moveTo(cx(gx), 0); ctx.lineTo(cx(gx), h); ctx.stroke();
+            }
+            const gsy = (dyMax - dyMin) / 8;
+            for (let gy = Math.ceil(dyMin / gsy) * gsy; gy <= dyMax + gsy * 0.01; gy += gsy) {
+                ctx.beginPath(); ctx.moveTo(0, cy(gy)); ctx.lineTo(w, cy(gy)); ctx.stroke();
+            }
+
+            /* Axes */
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(w, y0); ctx.stroke();
+            const x0 = cx(0);
+            if (x0 >= 0 && x0 <= w) { ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x0, h); ctx.stroke(); }
+
+            /* Riemann rectangles / trapezoids */
+            const dx = (b - a) / n;
+            let sum = 0;
+            ctx.fillStyle = 'rgba(93,230,255,0.18)';
+            ctx.strokeStyle = 'rgba(93,230,255,0.55)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < n; i++) {
+                const xs = a + i * dx, xe = xs + dx;
+                if (method === 'trap') {
+                    const y1 = safeEval(fnStr, xs), y2 = safeEval(fnStr, xe);
+                    sum += (y1 + y2) * 0.5 * dx;
+                    ctx.beginPath();
+                    ctx.moveTo(cx(xs), y0); ctx.lineTo(cx(xs), cy(y1));
+                    ctx.lineTo(cx(xe), cy(y2)); ctx.lineTo(cx(xe), y0);
+                    ctx.closePath(); ctx.fill(); ctx.stroke();
+                } else {
+                    const xEval = method === 'left' ? xs : method === 'right' ? xe : xs + dx * 0.5;
+                    const yv = safeEval(fnStr, xEval);
+                    sum += yv * dx;
+                    const rx = cx(xs), rw = cx(xe) - cx(xs);
+                    const ry = cy(yv), rh = y0 - cy(yv);
+                    ctx.fillRect(rx, ry, rw, rh);
+                    ctx.strokeRect(rx, ry, rw, rh);
+                }
+            }
+
+            /* Curve */
+            ctx.beginPath(); ctx.strokeStyle = '#c0c1ff'; ctx.lineWidth = 2.5;
+            let started = false;
+            for (let i = 0; i <= 600; i++) {
+                const x = dxMin + i * (dxMax - dxMin) / 600;
+                const y = safeEval(fnStr, x);
+                if (!isFinite(y)) { started = false; continue; }
+                const px = cx(x), py = cy(y);
+                if (py < -h || py > 2 * h) { started = false; continue; }
+                started ? ctx.lineTo(px, py) : (ctx.moveTo(px, py), started = true);
+            }
+            ctx.stroke();
+
+            /* Dashed boundary lines at a and b */
+            ctx.save();
+            ctx.setLineDash([6, 4]);
+            ctx.strokeStyle = '#c0c1ff'; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.55;
+            [a, b].forEach(xv => {
+                ctx.beginPath(); ctx.moveTo(cx(xv), 0); ctx.lineTo(cx(xv), h); ctx.stroke();
+            });
+            ctx.restore();
+
+            /* Stats */
+            const exact = numericalIntegral(fnStr, a, b, 2000);
+            const err = Math.abs(sum - exact);
+            const acc = Math.abs(exact) > 1e-10 ? Math.max(0, 100 - err / Math.abs(exact) * 100) : (err < 1e-10 ? 100 : 0);
+            document.getElementById('riemann-approx').innerText = sum.toFixed(4);
+            document.getElementById('riemann-exact').innerText = exact.toFixed(4);
+            document.getElementById('riemann-error').innerText = err.toFixed(4);
+            document.getElementById('riemann-acc').innerText = acc.toFixed(1) + '%';
+        }
+
+        ['riemann-fn','riemann-a','riemann-b','riemann-n','riemann-method'].forEach(id =>
+            document.getElementById(id).addEventListener('input', draw));
+        window.addEventListener('resize', draw);
+        draw();
+    })();
+
+    /* ─── MODULE 02: TAYLOR SERIES ─── */
+    (function() {
+        const canvas = document.getElementById('taylor-canvas');
+        const ctx = canvas.getContext('2d');
+        let activeFn = 'sin', activeN = 3, centerA = 0;
+
+        /* k-th derivative of fn evaluated at a */
+        function kthDeriv(fn, k, a) {
+            if (fn === 'sin') return Math.sin(a + k * Math.PI / 2);
+            if (fn === 'cos') return Math.cos(a + k * Math.PI / 2);
+            return Math.exp(a); /* exp */
+        }
+
+        function exactVal(fn, x) {
+            if (fn === 'sin') return Math.sin(x);
+            if (fn === 'cos') return Math.cos(x);
+            return Math.exp(Math.max(x, -20)); /* clamp exp to avoid Infinity */
+        }
+
+        /* Evaluate Taylor polynomial of degree n for fn centered at a */
+        function evalTaylor(fn, n, a, x) {
+            let result = 0, power = 1, dx = x - a;
+            for (let k = 0; k <= n; k++) {
+                result += (kthDeriv(fn, k, a) / factorial(k)) * power;
+                power *= dx;
+            }
+            return result;
+        }
+
+        function draw() {
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvas.parentElement.clientWidth;
+            const h = canvas.parentElement.clientHeight;
+            canvas.width = w * dpr; canvas.height = h * dpr;
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, w, h);
+
+            const xMin = -6, xMax = 6, yMin = -10, yMax = 10;
+            const pad = 32;
+            function px(x) { return pad + (x - xMin) / (xMax - xMin) * (w - 2 * pad); }
+            function py(y) { return (h - pad) - (y - yMin) / (yMax - yMin) * (h - 2 * pad); }
+
+            /* Grid */
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+            for (let gx = -6; gx <= 6; gx++) {
+                ctx.beginPath(); ctx.moveTo(px(gx), 0); ctx.lineTo(px(gx), h); ctx.stroke();
+            }
+            for (let gy = -10; gy <= 10; gy += 2) {
+                ctx.beginPath(); ctx.moveTo(0, py(gy)); ctx.lineTo(w, py(gy)); ctx.stroke();
+            }
+
+            /* Axes */
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(0, py(0)); ctx.lineTo(w, py(0)); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(px(0), 0); ctx.lineTo(px(0), h); ctx.stroke();
+
+            const steps = 500;
+
+            /* Taylor polynomial (secondary color) */
+            ctx.beginPath(); ctx.strokeStyle = '#5de6ff'; ctx.lineWidth = 2;
+            let started = false;
+            for (let i = 0; i <= steps; i++) {
+                const x = xMin + i * (xMax - xMin) / steps;
+                const y = evalTaylor(activeFn, activeN, centerA, x);
+                if (!isFinite(y)) { started = false; continue; }
+                const cpx = px(x), cpy = py(Math.max(yMin - 1, Math.min(yMax + 1, y)));
+                if (y < yMin - 0.5 || y > yMax + 0.5) { started = false; continue; }
+                started ? ctx.lineTo(cpx, cpy) : (ctx.moveTo(cpx, cpy), started = true);
+            }
+            ctx.stroke();
+
+            /* Exact function (primary color, drawn on top) */
+            ctx.beginPath(); ctx.strokeStyle = '#c0c1ff'; ctx.lineWidth = 2.5;
+            started = false;
+            for (let i = 0; i <= steps; i++) {
+                const x = xMin + i * (xMax - xMin) / steps;
+                const y = exactVal(activeFn, x);
+                if (!isFinite(y) || y < yMin - 0.5 || y > yMax + 0.5) { started = false; continue; }
+                const cpx = px(x), cpy = py(y);
+                started ? ctx.lineTo(cpx, cpy) : (ctx.moveTo(cpx, cpy), started = true);
+            }
+            ctx.stroke();
+
+            /* Center point marker */
+            const markerY = exactVal(activeFn, centerA);
+            if (isFinite(markerY) && markerY >= yMin && markerY <= yMax) {
+                ctx.beginPath(); ctx.arc(px(centerA), py(markerY), 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#c0c1ff'; ctx.fill();
+            }
+        }
+
+        /* fn buttons — single select */
+        document.querySelectorAll('.taylor-fn-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.taylor-fn-btn').forEach(b => {
+                    b.classList.remove('active', 'bg-primary/20', 'border-primary', 'text-primary');
+                    b.classList.add('border-white/10', 'text-on-surface-variant');
+                });
+                btn.classList.remove('border-white/10', 'text-on-surface-variant');
+                btn.classList.add('active', 'bg-primary/20', 'border-primary', 'text-primary');
+                activeFn = btn.dataset.fn;
+                draw();
+            });
+        });
+
+        /* n buttons — single select */
+        document.querySelectorAll('.taylor-n-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.taylor-n-btn').forEach(b => {
+                    b.classList.remove('bg-secondary/20', 'border-secondary', 'text-secondary');
+                    b.classList.add('border-white/10');
+                });
+                btn.classList.remove('border-white/10');
+                btn.classList.add('bg-secondary/20', 'border-secondary', 'text-secondary');
+                activeN = parseInt(btn.dataset.n);
+                draw();
+            });
+        });
+
+        const aSlider = document.getElementById('taylor-a');
+        aSlider.addEventListener('input', () => {
+            centerA = parseFloat(aSlider.value);
+            document.getElementById('taylor-a-val').innerText = centerA.toFixed(1);
+            draw();
+        });
+
+        window.addEventListener('resize', draw);
+        draw();
+    })();
+
+    /* ─── MODULE 03: AREA BETWEEN CURVES ─── */
+    (function() {
+        const canvas = document.getElementById('area-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function draw() {
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvas.parentElement.clientWidth;
+            const h = canvas.parentElement.clientHeight;
+            canvas.width = w * dpr; canvas.height = h * dpr;
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, w, h);
+
+            const fStr = document.getElementById('area-f').value;
+            const gStr = document.getElementById('area-g').value;
+            const a = parseFloat(document.getElementById('area-a').value);
+            const b = parseFloat(document.getElementById('area-b').value);
+            if (!isFinite(a) || !isFinite(b) || a >= b) return;
+
+            let fFn, gFn;
+            try { fFn = new Function('x', 'return ' + fStr); } catch(e) { fFn = () => 0; }
+            try { gFn = new Function('x', 'return ' + gStr); } catch(e) { gFn = () => 0; }
+
+            /* Sample y range */
+            let yMin = Infinity, yMax = -Infinity;
+            for (let i = 0; i <= 200; i++) {
+                const x = a + i * (b - a) / 200;
+                const yf = fFn(x), yg = gFn(x);
+                if (isFinite(yf)) { yMin = Math.min(yMin, yf); yMax = Math.max(yMax, yf); }
+                if (isFinite(yg)) { yMin = Math.min(yMin, yg); yMax = Math.max(yMax, yg); }
+            }
+            yMin = Math.min(yMin, 0); yMax = Math.max(yMax, 0);
+            if (yMin === yMax) { yMin -= 1; yMax += 1; }
+
+            const pad = 40;
+            const xPad = (b - a) * 0.14, yPad = (yMax - yMin) * 0.16;
+            const dxMin = a - xPad, dxMax = b + xPad;
+            const dyMin = yMin - yPad, dyMax = yMax + yPad;
+
+            function cpx(x) { return pad + (x - dxMin) / (dxMax - dxMin) * (w - 2 * pad); }
+            function cpy(y) { return (h - pad) - (y - dyMin) / (dyMax - dyMin) * (h - 2 * pad); }
+            const y0 = cpy(0);
+
+            /* Grid */
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+            const gsx = (dxMax - dxMin) / 10;
+            for (let gx = Math.ceil(dxMin / gsx) * gsx; gx <= dxMax + gsx * 0.01; gx += gsx) {
+                ctx.beginPath(); ctx.moveTo(cpx(gx), 0); ctx.lineTo(cpx(gx), h); ctx.stroke();
+            }
+            const gsy = (dyMax - dyMin) / 8;
+            for (let gy = Math.ceil(dyMin / gsy) * gsy; gy <= dyMax + gsy * 0.01; gy += gsy) {
+                ctx.beginPath(); ctx.moveTo(0, cpy(gy)); ctx.lineTo(w, cpy(gy)); ctx.stroke();
+            }
+
+            /* Axes */
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(w, y0); ctx.stroke();
+            const x0 = cpx(0);
+            if (x0 >= 0 && x0 <= w) { ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x0, h); ctx.stroke(); }
+
+            const steps = 300;
+
+            /* Filled region between curves */
+            ctx.beginPath();
+            for (let i = 0; i <= steps; i++) {
+                const x = a + i * (b - a) / steps;
+                const y = fFn(x);
+                const px = cpx(x), py = isFinite(y) ? cpy(y) : y0;
+                i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+            }
+            for (let i = steps; i >= 0; i--) {
+                const x = a + i * (b - a) / steps;
+                const y = gFn(x);
+                ctx.lineTo(cpx(x), isFinite(y) ? cpy(y) : y0);
+            }
+            ctx.closePath();
+            const grad = ctx.createLinearGradient(cpx(a), 0, cpx(b), 0);
+            grad.addColorStop(0, 'rgba(93,230,255,0.15)');
+            grad.addColorStop(1, 'rgba(255,178,183,0.15)');
+            ctx.fillStyle = grad; ctx.fill();
+
+            /* g curve — rose */
+            ctx.beginPath(); ctx.strokeStyle = '#ffb2b7'; ctx.lineWidth = 2;
+            let started = false;
+            for (let i = 0; i <= steps; i++) {
+                const x = dxMin + i * (dxMax - dxMin) / steps;
+                const y = gFn(x);
+                if (!isFinite(y)) { started = false; continue; }
+                started ? ctx.lineTo(cpx(x), cpy(y)) : (ctx.moveTo(cpx(x), cpy(y)), started = true);
+            }
+            ctx.stroke();
+
+            /* f curve — cyan */
+            ctx.beginPath(); ctx.strokeStyle = '#5de6ff'; ctx.lineWidth = 2;
+            started = false;
+            for (let i = 0; i <= steps; i++) {
+                const x = dxMin + i * (dxMax - dxMin) / steps;
+                const y = fFn(x);
+                if (!isFinite(y)) { started = false; continue; }
+                started ? ctx.lineTo(cpx(x), cpy(y)) : (ctx.moveTo(cpx(x), cpy(y)), started = true);
+            }
+            ctx.stroke();
+
+            /* Dashed boundary lines */
+            ctx.save();
+            ctx.setLineDash([6, 4]); ctx.strokeStyle = '#c0c1ff';
+            ctx.lineWidth = 1.5; ctx.globalAlpha = 0.55;
+            [a, b].forEach(xv => {
+                ctx.beginPath(); ctx.moveTo(cpx(xv), 0); ctx.lineTo(cpx(xv), h); ctx.stroke();
+            });
+            ctx.restore();
+
+            /* Numerical area */
+            let area = 0;
+            const intDx = (b - a) / 2000;
+            for (let i = 0; i < 2000; i++) {
+                const x = a + (i + 0.5) * intDx;
+                const diff = Math.abs(fFn(x) - gFn(x));
+                if (isFinite(diff)) area += diff;
+            }
+            document.getElementById('area-result').innerText = (area * intDx).toFixed(3);
+        }
+
+        ['area-f','area-g','area-a','area-b'].forEach(id =>
+            document.getElementById(id).addEventListener('input', draw));
+        window.addEventListener('resize', draw);
+        draw();
+    })();
+
+    /* ─── MODULE 04: SOLID OF REVOLUTION ─── */
+    (function() {
+        const canvas = document.getElementById('solid-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function draw() {
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvas.parentElement.clientWidth;
+            const h = canvas.parentElement.clientHeight;
+            canvas.width = w * dpr; canvas.height = h * dpr;
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, w, h);
+
+            const fStr = document.getElementById('solid-f').value;
+            const a = parseFloat(document.getElementById('solid-a').value);
+            const b = parseFloat(document.getElementById('solid-b').value);
+            if (!isFinite(a) || !isFinite(b) || a >= b) return;
+
+            let fFn;
+            try { fFn = new Function('x', 'return ' + fStr); } catch(e) { fFn = () => 0; }
+
+            /* Max radius */
+            let rMax = 0;
+            for (let i = 0; i <= 200; i++) {
+                const y = fFn(a + i * (b - a) / 200);
+                if (isFinite(y)) rMax = Math.max(rMax, Math.abs(y));
+            }
+            rMax = Math.max(rMax, 0.5);
+
+            const pad = 40;
+            const xPad = (b - a) * 0.1;
+            const dxMin = a - xPad, dxMax = b + xPad;
+            const rScale = rMax * 1.3;
+
+            /* Symmetric coordinate mapping */
+            function cpx(x) { return pad + (x - dxMin) / (dxMax - dxMin) * (w - 2 * pad); }
+            function cpy(y) { return h / 2 - (y / rScale) * (h / 2 - pad); }
+            const y0 = cpy(0); /* = h/2 */
+
+            /* Grid */
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+            const gsx = (dxMax - dxMin) / 10;
+            for (let gx = Math.ceil(dxMin / gsx) * gsx; gx <= dxMax + gsx * 0.01; gx += gsx) {
+                ctx.beginPath(); ctx.moveTo(cpx(gx), 0); ctx.lineTo(cpx(gx), h); ctx.stroke();
+            }
+            for (let gy = -Math.ceil(rMax); gy <= Math.ceil(rMax); gy++) {
+                ctx.beginPath(); ctx.moveTo(0, cpy(gy)); ctx.lineTo(w, cpy(gy)); ctx.stroke();
+            }
+
+            /* Axes */
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(w, y0); ctx.stroke();
+            const x0 = cpx(0);
+            if (x0 >= 0 && x0 <= w) { ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x0, h); ctx.stroke(); }
+
+            const steps = 300;
+
+            /* Silhouette fill */
+            ctx.beginPath();
+            for (let i = 0; i <= steps; i++) {
+                const x = a + i * (b - a) / steps;
+                const y = fFn(x);
+                const px = cpx(x), py = isFinite(y) ? cpy(y) : y0;
+                i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+            }
+            for (let i = steps; i >= 0; i--) {
+                const x = a + i * (b - a) / steps;
+                const y = -Math.abs(fFn(x));
+                ctx.lineTo(cpx(x), isFinite(y) ? cpy(y) : y0);
+            }
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(192,193,255,0.07)'; ctx.fill();
+
+            /* Disk cross-sections as ellipses */
+            const nDisks = 14;
+            const diskRx = (w - 2 * pad) / (dxMax - dxMin) * (b - a) / nDisks * 0.38;
+            for (let i = 0; i <= nDisks; i++) {
+                const x = a + i * (b - a) / nDisks;
+                const r = Math.abs(fFn(x));
+                if (!isFinite(r)) continue;
+                const diskRy = (r / rScale) * (h / 2 - pad);
+                const dcx = cpx(x);
+                ctx.beginPath();
+                ctx.ellipse(dcx, y0, diskRx, diskRy, 0, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(192,193,255,0.13)'; ctx.fill();
+                ctx.strokeStyle = 'rgba(192,193,255,0.4)'; ctx.lineWidth = 1; ctx.stroke();
+            }
+
+            /* Upper curve f(x) — primary */
+            ctx.beginPath(); ctx.strokeStyle = '#c0c1ff'; ctx.lineWidth = 2.5;
+            let started = false;
+            for (let i = 0; i <= steps; i++) {
+                const x = a + i * (b - a) / steps;
+                const y = fFn(x);
+                if (!isFinite(y)) { started = false; continue; }
+                started ? ctx.lineTo(cpx(x), cpy(y)) : (ctx.moveTo(cpx(x), cpy(y)), started = true);
+            }
+            ctx.stroke();
+
+            /* Lower curve -|f(x)| — dashed rose */
+            ctx.save();
+            ctx.setLineDash([5, 4]); ctx.strokeStyle = '#ffb2b7'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); started = false;
+            for (let i = 0; i <= steps; i++) {
+                const x = a + i * (b - a) / steps;
+                const y = -Math.abs(fFn(x));
+                if (!isFinite(y)) { started = false; continue; }
+                started ? ctx.lineTo(cpx(x), cpy(y)) : (ctx.moveTo(cpx(x), cpy(y)), started = true);
+            }
+            ctx.stroke();
+            ctx.restore();
+
+            /* Volume: π ∫[a,b] f(x)² dx */
+            let vol = 0;
+            const intDx = (b - a) / 2000;
+            for (let i = 0; i < 2000; i++) {
+                const fx = fFn(a + (i + 0.5) * intDx);
+                if (isFinite(fx)) vol += fx * fx;
+            }
+            vol *= Math.PI * intDx;
+            document.getElementById('solid-vol').innerText = vol.toFixed(3) + ' u³';
+        }
+
+        ['solid-f','solid-a','solid-b'].forEach(id =>
+            document.getElementById(id).addEventListener('input', draw));
+        window.addEventListener('resize', draw);
+        draw();
+    })();
+
+    /* ─── MODULE 05: THREE.JS 3D SURFACE ─── */
+    (function() {
+        const container = document.getElementById('three-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0x303050, 2));
+        const dirLight = new THREE.DirectionalLight(0xc0c1ff, 1);
+        dirLight.position.set(5, 10, 5);
+        scene.add(dirLight);
+        const ptLight = new THREE.PointLight(0x5de6ff, 0.8, 60);
+        ptLight.position.set(-5, 8, -5);
+        scene.add(ptLight);
+
+        /* Orbital camera state */
+        let theta = 0.5, phi = 1.1, radius = 16;
+        let isDragging = false, lastMx = 0, lastMy = 0;
+
+        function updateCamera() {
+            camera.position.set(
+                radius * Math.sin(phi) * Math.sin(theta),
+                radius * Math.cos(phi),
+                radius * Math.sin(phi) * Math.cos(theta)
+            );
+            camera.lookAt(0, 0, 0);
+        }
+        updateCamera();
+
+        const el = renderer.domElement;
+
+        /* Mouse drag */
+        el.addEventListener('mousedown', e => { isDragging = true; lastMx = e.clientX; lastMy = e.clientY; });
+        window.addEventListener('mouseup', () => { isDragging = false; });
+        window.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+            theta -= (e.clientX - lastMx) * 0.008;
+            phi = Math.max(0.05, Math.min(Math.PI - 0.05, phi + (e.clientY - lastMy) * 0.008));
+            lastMx = e.clientX; lastMy = e.clientY;
+            updateCamera();
+        });
+
+        /* Scroll zoom */
+        el.addEventListener('wheel', e => {
+            radius = Math.max(4, Math.min(50, radius + e.deltaY * 0.04));
+            updateCamera();
+            e.preventDefault();
+        }, { passive: false });
+
+        /* Touch */
+        let lastTouchDist = 0, ltx = 0, lty = 0;
+        el.addEventListener('touchstart', e => {
+            if (e.touches.length === 1) { isDragging = true; ltx = e.touches[0].clientX; lty = e.touches[0].clientY; }
+            else if (e.touches.length === 2) {
+                isDragging = false;
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                lastTouchDist = Math.sqrt(dx * dx + dy * dy);
+            }
+            e.preventDefault();
+        }, { passive: false });
+        el.addEventListener('touchmove', e => {
+            if (e.touches.length === 1 && isDragging) {
+                theta -= (e.touches[0].clientX - ltx) * 0.008;
+                phi = Math.max(0.05, Math.min(Math.PI - 0.05, phi + (e.touches[0].clientY - lty) * 0.008));
+                ltx = e.touches[0].clientX; lty = e.touches[0].clientY;
+                updateCamera();
+            } else if (e.touches.length === 2) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                radius = Math.max(4, Math.min(50, radius - (dist - lastTouchDist) * 0.05));
+                lastTouchDist = dist;
+                updateCamera();
+            }
+            e.preventDefault();
+        }, { passive: false });
+        el.addEventListener('touchend', () => { isDragging = false; });
+
+        /* Surface mesh */
+        let surfaceMesh = null;
+
+        function parseFnStr(raw) {
+            return raw
+                .replace(/\bsin\b/g, 'Math.sin')
+                .replace(/\bcos\b/g, 'Math.cos')
+                .replace(/\btan\b/g, 'Math.tan')
+                .replace(/\bsqrt\b/g, 'Math.sqrt')
+                .replace(/\babs\b/g, 'Math.abs')
+                .replace(/\blog\b/g, 'Math.log')
+                .replace(/\bexp\b/g, 'Math.exp')
+                .replace(/\bpi\b/g, 'Math.PI')
+                .replace(/(?<![a-zA-Z])e(?![a-zA-Z0-9_])/g, 'Math.E')
+                .replace(/\^/g, '**');
+        }
+
+        function buildSurface() {
+            if (surfaceMesh) { scene.remove(surfaceMesh); surfaceMesh.geometry.dispose(); surfaceMesh.material.dispose(); }
+            const size = 10, res = 80;
+            const geometry = new THREE.PlaneGeometry(size, size, res, res);
+            const pos = geometry.attributes.position;
+            const fnStr = parseFnStr(document.getElementById('z-fn').value);
+            let zFn;
+            try { zFn = new Function('x', 'y', 'return ' + fnStr); } catch(e) { zFn = () => 0; }
+
+            let zMin = Infinity, zMax = -Infinity;
+            const zVals = new Float32Array(pos.count);
+            for (let i = 0; i < pos.count; i++) {
+                let z = 0;
+                try { z = zFn(pos.getX(i), pos.getY(i)); } catch(e) {}
+                if (!isFinite(z)) z = 0;
+                zVals[i] = z;
+                zMin = Math.min(zMin, z); zMax = Math.max(zMax, z);
+            }
+
+            const colors = new Float32Array(pos.count * 3);
+            const zRange = zMax - zMin || 1;
+            /* Indigo (#494bd6) at bottom → cyan (#5de6ff) at top */
+            for (let i = 0; i < pos.count; i++) {
+                pos.setZ(i, zVals[i]);
+                const t = (zVals[i] - zMin) / zRange;
+                colors[i * 3]     = 0x49 / 255 + t * (0x5d / 255 - 0x49 / 255);
+                colors[i * 3 + 1] = 0x4b / 255 + t * (0xe6 / 255 - 0x4b / 255);
+                colors[i * 3 + 2] = 0xd6 / 255 + t * (0xff / 255 - 0xd6 / 255);
+            }
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geometry.computeVertexNormals();
+
+            const material = new THREE.MeshPhongMaterial({
+                vertexColors: true,
+                side: THREE.DoubleSide,
+                shininess: 70,
+                specular: new THREE.Color(0x5de6ff)
+            });
+            surfaceMesh = new THREE.Mesh(geometry, material);
+            surfaceMesh.rotation.x = -Math.PI / 2;
+            scene.add(surfaceMesh);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (!isDragging && surfaceMesh) surfaceMesh.rotation.z += 0.005;
+            renderer.render(scene, camera);
+        }
+
+        document.getElementById('z-fn').addEventListener('change', buildSurface);
+        buildSurface();
+        animate();
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+        });
+    })();
+</script>
+</body></html>
